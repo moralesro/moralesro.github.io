@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Calma · Peluche digital antiestrés</title>
+<style>
+  :root{
+    --bg1:#1b1033; --bg2:#2d1b4e; --bg3:#0f1a3a;
+    --accent:#ff9ec4; --accent2:#9bd8ff; --accent3:#c5b3ff;
+    --text:#f3eefb; --muted:#b3a8cc;
+    --card:rgba(255,255,255,.07);
+    --border:rgba(255,255,255,.14);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    color:var(--text);
+    background:radial-gradient(120% 90% at 20% 10%, var(--bg2) 0%, var(--bg1) 45%, var(--bg3) 100%);
+    background-attachment:fixed;
+    overflow-x:hidden;
+    display:flex;flex-direction:column;
+    transition:background 1.2s ease;
+  }
+  body.tema-calido{--bg1:#2b1220;--bg2:#4a2135;--bg3:#1e1030;}
+  body.tema-bosque{--bg1:#0d2119;--bg2:#143a2c;--bg3:#07202a;--accent:#8fe3b0;--accent2:#c9f0a8;--accent3:#7fd6c8;}
+  body.tema-noche{--bg1:#05070f;--bg2:#101a33;--bg3:#02040a;--accent:#8fa8ff;--accent2:#6fd0e8;--accent3:#b79bff;}
+
+  header{
+    padding:18px 20px 6px;text-align:center;
+  }
+  h1{
+    margin:0;font-size:1.45rem;font-weight:600;letter-spacing:.5px;
+    background:linear-gradient(90deg,var(--accent),var(--accent3),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{margin:6px 0 0;font-size:.82rem;color:var(--muted);}
+
+  nav{
+    display:flex;gap:8px;overflow-x:auto;padding:14px 16px;
+    scrollbar-width:none;justify-content:center;flex-wrap:wrap;
+  }
+  nav::-webkit-scrollbar{display:none;}
+  nav button{
+    flex:0 0 auto;border:1px solid var(--border);background:var(--card);
+    color:var(--text);padding:9px 16px;border-radius:999px;font-size:.85rem;
+    cursor:pointer;backdrop-filter:blur(8px);transition:.25s;
+  }
+  nav button:hover{background:rgba(255,255,255,.14);}
+  nav button.activo{
+    background:linear-gradient(90deg,var(--accent),var(--accent3));
+    color:#1b1033;font-weight:600;border-color:transparent;
+    box-shadow:0 6px 22px -8px var(--accent);
+  }
+
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 16px 24px;}
+  .panel{display:none;width:100%;max-width:560px;text-align:center;animation:fade .45s ease;}
+  .panel.activo{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  .titulo{font-size:1.05rem;margin:0 0 4px;font-weight:600;}
+  .ayuda{font-size:.8rem;color:var(--muted);margin:0 0 16px;}
+
+  .lienzo{
+    background:var(--card);border:1px solid var(--border);border-radius:26px;
+    padding:20px;backdrop-filter:blur(14px);
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.6);
+  }
+
+  /* ---------- POP IT ---------- */
+  #popGrid{display:grid;gap:9px;justify-content:center;}
+  .burbuja{
+    width:100%;aspect-ratio:1;border-radius:50%;border:none;cursor:pointer;
+    background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.85), var(--accent) 45%, rgba(0,0,0,.25) 100%);
+    box-shadow:0 6px 12px -4px rgba(0,0,0,.5), inset 0 -4px 8px rgba(0,0,0,.25);
+    transition:transform .12s cubic-bezier(.34,1.56,.64,1), box-shadow .15s, background .2s;
+  }
+  .burbuja:nth-child(3n){background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.85), var(--accent2) 45%, rgba(0,0,0,.25) 100%);}
+  .burbuja:nth-child(3n+1){background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.85), var(--accent3) 45%, rgba(0,0,0,.25) 100%);}
+  .burbuja.pop{
+    transform:scale(.82);
+    background:radial-gradient(circle at 50% 60%, rgba(0,0,0,.45), rgba(255,255,255,.06));
+    box-shadow:inset 0 5px 12px rgba(0,0,0,.6);
+  }
+  .contador{margin-top:14px;font-size:.8rem;color:var(--muted);}
+
+  /* ---------- PELUCHE ---------- */
+  #zonaPeluche{padding:26px 10px 10px;display:flex;flex-direction:column;align-items:center;}
+  #peluche{
+    width:210px;height:210px;cursor:grab;user-select:none;
+    filter:drop-shadow(0 18px 26px rgba(0,0,0,.45));
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  #peluche:active{cursor:grabbing;}
+  .abrazos{margin-top:16px;font-size:.82rem;color:var(--muted);}
+  .frase{margin-top:10px;font-size:.92rem;color:var(--accent2);min-height:1.3em;}
+
+  /* ---------- RESPIRACIÓN ---------- */
+  .respWrap{height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  #circuloResp{
+    width:130px;height:130px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), var(--accent2) 55%, var(--accent3));
+    box-shadow:0 0 60px -6px var(--accent2);
+    display:flex;align-items:center;justify-content:center;
+    font-size:.85rem;color:#12132b;font-weight:700;
+    transition:transform 4s cubic-bezier(.4,0,.2,1);
+  }
+  #fase{margin-top:26px;font-size:1.1rem;letter-spacing:2px;color:var(--accent2);}
+  #cuenta{font-size:2rem;font-weight:300;margin-top:4px;}
+  .ciclos{font-size:.78rem;color:var(--muted);margin-top:10px;}
+
+  /* ---------- ARENA / TRAZO ---------- */
+  #canvasArena{
+    width:100%;height:320px;border-radius:20px;display:block;
+    background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(0,0,0,.25));
+    touch-action:none;cursor:crosshair;
+  }
+
+  /* ---------- SPINNER ---------- */
+  .spinWrap{height:320px;display:flex;align-items:center;justify-content:center;}
+  #spinner{width:230px;height:230px;cursor:grab;touch-action:none;filter:drop-shadow(0 14px 22px rgba(0,0,0,.5));}
+  #spinner:active{cursor:grabbing;}
+
+  /* ---------- 5-4-3-2-1 ---------- */
+  .grounding{text-align:left;}
+  .paso{
+    display:flex;gap:12px;align-items:flex-start;padding:12px 14px;margin-bottom:10px;
+    border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.04);
+    cursor:pointer;transition:.25s;
+  }
+  .paso:hover{background:rgba(255,255,255,.09);}
+  .paso.hecho{border-color:var(--accent2);background:rgba(155,216,255,.12);}
+  .paso.hecho .num{background:var(--accent2);color:#12132b;}
+  .num{
+    flex:0 0 32px;height:32px;border-radius:50%;background:rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.95rem;
+  }
+  .paso p{margin:0;font-size:.88rem;line-height:1.45;}
+  .paso p b{display:block;font-size:.8rem;color:var(--accent3);font-weight:600;margin-bottom:2px;}
+
+  footer{
+    padding:10px 20px 22px;text-align:center;font-size:.72rem;color:var(--muted);line-height:1.5;
+  }
+  .temas{display:flex;gap:8px;justify-content:center;margin-bottom:12px;}
+  .temas span{
+    width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.2s;
+  }
+  .temas span:hover{transform:scale(1.15);}
+  .t1{background:linear-gradient(135deg,#ff9ec4,#9bd8ff);}
+  .t2{background:linear-gradient(135deg,#ff8a7a,#ffd28a);}
+  .t3{background:linear-gradient(135deg,#8fe3b0,#c9f0a8);}
+  .t4{background:linear-gradient(135deg,#8fa8ff,#6fd0e8);}
+  .mute{
+    background:var(--card);border:1px solid var(--border);color:var(--text);
+    border-radius:999px;padding:6px 14px;font-size:.75rem;cursor:pointer;margin-bottom:10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Calma</h1>
+  <p class="sub">Tu peluche antiestrés de bolsillo · tócalo, aprieta, respira</p>
+</header>
+
+<nav id="menu">
+  <button data-p="peluche" class="activo">🧸 Peluche</button>
+  <button data-p="pop">🫧 Pop-it</button>
+  <button data-p="resp">🌬️ Respirar</button>
+  <button data-p="arena">✨ Arena</button>
+  <button data-p="spin">🌀 Spinner</button>
+  <button data-p="ground">🌿 5-4-3-2-1</button>
+</nav>
+
+<main>
+
+  <!-- PELUCHE -->
+  <section class="panel activo" id="p-peluche">
+    <h2 class="titulo">Aprieta el peluche</h2>
+    <p class="ayuda">Mantén presionado para apretarlo. Suéltalo y verás cómo rebota.</p>
+    <div class="lienzo" id="zonaPeluche">
+      <svg id="peluche" viewBox="0 0 200 200">
+        <ellipse cx="55" cy="52" rx="26" ry="28" fill="#f7b8d4"/>
+        <ellipse cx="145" cy="52" rx="26" ry="28" fill="#f7b8d4"/>
+        <ellipse cx="55" cy="54" rx="13" ry="15" fill="#ffe0ee"/>
+        <ellipse cx="145" cy="54" rx="13" ry="15" fill="#ffe0ee"/>
+        <ellipse cx="100" cy="115" rx="72" ry="66" fill="#ffc9e0"/>
+        <ellipse cx="100" cy="128" rx="44" ry="40" fill="#fff0f7" opacity=".75"/>
+        <ellipse id="ojoI" cx="76" cy="103" rx="7.5" ry="9" fill="#3a2540"/>
+        <ellipse id="ojoD" cx="124" cy="103" rx="7.5" ry="9" fill="#3a2540"/>
+        <circle cx="78.5" cy="100" r="2.6" fill="#fff"/>
+        <circle cx="126.5" cy="100" r="2.6" fill="#fff"/>
+        <ellipse cx="100" cy="122" rx="8" ry="6" fill="#e58aab"/>
+        <path id="boca" d="M88 134 Q100 146 112 134" stroke="#c9718f" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="58" cy="127" rx="11" ry="7" fill="#ff9dc0" opacity=".55"/>
+        <ellipse cx="142" cy="127" rx="11" ry="7" fill="#ff9dc0" opacity=".55"/>
+      </svg>
+      <div class="abrazos">Abrazos: <b id="numAbrazos">0</b></div>
+      <div class="frase" id="fraseP">Hola, estoy aquí contigo.</div>
+    </div>
+  </section>
+
+  <!-- POP IT -->
+  <section class="panel" id="p-pop">
+    <h2 class="titulo">Pop-it infinito</h2>
+    <p class="ayuda">Revienta todas las burbujas. Cuando termines, se rellenan solas.</p>
+    <div class="lienzo">
+      <div id="popGrid"></div>
+      <div class="contador">Pops: <b id="numPops">0</b></div>
+    </div>
+  </section>
+
+  <!-- RESPIRACIÓN -->
+  <section class="panel" id="p-resp">
+    <h2 class="titulo">Respiración 4-7-8</h2>
+    <p class="ayuda">Sigue el círculo con tu respiración. Tres o cuatro ciclos suelen bastar.</p>
+    <div class="lienzo respWrap">
+      <div id="circuloResp">inhala</div>
+      <div id="fase">PREPARADO</div>
+      <div id="cuenta">—</div>
+      <div class="ciclos">Ciclos completados: <b id="numCiclos">0</b></div>
+    </div>
+  </section>
+
+  <!-- ARENA -->
+  <section class="panel" id="p-arena">
+    <h2 class="titulo">Arena luminosa</h2>
+    <p class="ayuda">Arrastra el dedo o el ratón. Los trazos se desvanecen poco a poco.</p>
+    <div class="lienzo">
+      <canvas id="canvasArena"></canvas>
+    </div>
+  </section>
+
+  <!-- SPINNER -->
+  <section class="panel" id="p-spin">
+    <h2 class="titulo">Spinner</h2>
+    <p class="ayuda">Arrastra en círculos para girarlo. Gira solo hasta detenerse.</p>
+    <div class="lienzo spinWrap">
+      <svg id="spinner" viewBox="0 0 200 200">
+        <g id="gSpin">
+          <circle cx="100" cy="42" r="34" fill="var(--accent)"/>
+          <circle cx="50" cy="128" r="34" fill="var(--accent2)"/>
+          <circle cx="150" cy="128" r="34" fill="var(--accent3)"/>
+          <circle cx="100" cy="100" r="34" fill="rgba(255,255,255,.14)"/>
+          <circle cx="100" cy="100" r="19" fill="#fff" opacity=".9"/>
+          <circle cx="100" cy="100" r="10" fill="#2d1b4e"/>
+          <circle cx="100" cy="42" r="12" fill="rgba(255,255,255,.35)"/>
+          <circle cx="50" cy="128" r="12" fill="rgba(255,255,255,.35)"/>
+          <circle cx="150" cy="128" r="12" fill="rgba(255,255,255,.35)"/>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- GROUNDING -->
+  <section class="panel" id="p-ground">
+    <h2 class="titulo">Técnica 5-4-3-2-1</h2>
+    <p class="ayuda">Toca cada paso cuando lo completes. Te ancla al momento presente.</p>
+    <div class="lienzo grounding" id="listaGround"></div>
+  </section>
+
+</main>
+
+<footer>
+  <button class="mute" id="btnSonido">🔊 Sonido: activado</button>
+  <div class="temas">
+    <span class="t1" data-tema=""></span>
+    <span class="t2" data-tema="tema-calido"></span>
+    <span class="t3" data-tema="tema-bosque"></span>
+    <span class="t4" data-tema="tema-noche"></span>
+  </div>
+  Esta app es un apoyo para momentos de tensión, no sustituye atención profesional.<br>
+  Si la ansiedad te desborda con frecuencia, hablarlo con un profesional de salud puede ayudarte mucho.
+</footer>
+
+<script>
+/* ===== Audio suave (WebAudio, sin archivos) ===== */
+let ctx=null, sonidoOn=true;
+function tono(freq, dur=0.12, tipo='sine', vol=0.18){
+  if(!sonidoOn) return;
+  try{
+    ctx = ctx || new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=tipo; o.frequency.value=freq;
+    g.gain.setValueAtTime(vol,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+function vibrar(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
+document.getElementById('btnSonido').onclick=function(){
+  sonidoOn=!sonidoOn;
+  this.textContent = sonidoOn ? '🔊 Sonido: activado' : '🔇 Sonido: silenciado';
+};
+
+/* ===== Navegación ===== */
+document.querySelectorAll('#menu button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#menu button').forEach(x=>x.classList.remove('activo'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('activo'));
+    b.classList.add('activo');
+    document.getElementById('p-'+b.dataset.p).classList.add('activo');
+    if(b.dataset.p==='arena') ajustarCanvas();
+    tono(520,.08,'sine',.08);
+  };
+});
+
+/* ===== Temas ===== */
+document.querySelectorAll('.temas span').forEach(s=>{
+  s.onclick=()=>{
+    document.body.className = s.dataset.tema;
+    tono(660,.1,'triangle',.1);
+  };
+});
+
+/* ===== PELUCHE ===== */
+const peluche=document.getElementById('peluche');
+const fraseEl=document.getElementById('fraseP');
+const numAbrazos=document.getElementById('numAbrazos');
+const ojoI=document.getElementById('ojoI'), ojoD=document.getElementById('ojoD'), boca=document.getElementById('boca');
+let abrazos=0, apretando=false;
+const frases=[
+  "Respira. No hay prisa.",
+  "Estás haciéndolo mejor de lo que crees.",
+  "Este momento también va a pasar.",
+  "Puedes quedarte aquí el tiempo que necesites.",
+  "Suelta los hombros. Afloja la mandíbula.",
+  "No tienes que resolverlo todo ahora.",
+  "Gracias por cuidarte.",
+  "Un paso pequeño también cuenta."
+];
+function apretar(){
+  apretando=true;
+  peluche.style.transition='transform .18s ease';
+  peluche.style.transform='scale(.86) rotate(-2deg)';
+  ojoI.setAttribute('ry','3'); ojoD.setAttribute('ry','3');
+  boca.setAttribute('d','M86 136 Q100 128 114 136');
+  tono(320,.18,'sine',.14); vibrar(18);
+}
+function soltar(){
+  if(!apretando) return;
+  apretando=false;
+  peluche.style.transition='transform .55s cubic-bezier(.2,1.8,.4,1)';
+  peluche.style.transform='scale(1) rotate(0deg)';
+  ojoI.setAttribute('ry','9'); ojoD.setAttribute('ry','9');
+  boca.setAttribute('d','M88 134 Q100 146 112 134');
+  abrazos++; numAbrazos.textContent=abrazos;
+  fraseEl.style.opacity=0;
+  setTimeout(()=>{ fraseEl.textContent=frases[Math.floor(Math.random()*frases.length)]; fraseEl.style.transition='opacity .4s'; fraseEl.style.opacity=1; },180);
+  tono(560,.22,'sine',.12);
+}
+['mousedown','touchstart'].forEach(e=>peluche.addEventListener(e,ev=>{ev.preventDefault();apretar();},{passive:false}));
+['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>peluche.addEventListener(e,soltar));
+// parpadeo natural
+setInterval(()=>{ if(apretando) return;
+  ojoI.setAttribute('ry','1.5'); ojoD.setAttribute('ry','1.5');
+  setTimeout(()=>{ if(apretando) return; ojoI.setAttribute('ry','9'); ojoD.setAttribute('ry','9'); },130);
+}, 4200);
+
+/* ===== POP IT ===== */
+const grid=document.getElementById('popGrid');
+const numPops=document.getElementById('numPops');
+let pops=0, cols=7;
+function construirPop(){
+  cols = window.innerWidth<420 ? 6 : 7;
+  grid.style.gridTemplateColumns=`repeat(${cols},minmax(0,1fr))`;
+  grid.innerHTML='';
+  for(let i=0;i<cols*7;i++){
+    const b=document.createElement('button');
+    b.className='burbuja';
+    b.onclick=()=>{
+      if(b.classList.contains('pop')) return;
+      b.classList.add('pop');
+      pops++; numPops.textContent=pops;
+      tono(400+Math.random()*500,.07,'square',.09); vibrar(12);
+      if([...grid.children].every(x=>x.classList.contains('pop'))){
+        setTimeout(()=>{
+          [...grid.children].forEach((x,j)=>setTimeout(()=>x.classList.remove('pop'), j*22));
+          tono(880,.3,'triangle',.12);
+        },420);
+      }
+    };
+    grid.appendChild(b);
+  }
+}
+construirPop();
+window.addEventListener('resize',()=>{ const p=pops; construirPop(); pops=p; numPops.textContent=pops; });
+
+/* ===== RESPIRACIÓN 4-7-8 ===== */
+const circ=document.getElementById('circuloResp'), faseEl=document.getElementById('fase'),
+      cuentaEl=document.getElementById('cuenta'), numCiclos=document.getElementById('numCiclos');
+const pasos=[{n:'INHALA',s:4,e:1.75},{n:'SOSTÉN',s:7,e:1.75},{n:'EXHALA',s:8,e:1}];
+let idx=0,resto=pasos[0].s,ciclos=0;
+circ.style.transform='scale(1)';
+setInterval(()=>{
+  const p=pasos[idx];
+  if(resto===p.s){
+    faseEl.textContent=p.n;
+    circ.textContent=p.n.toLowerCase();
+    circ.style.transitionDuration=p.s+'s';
+    circ.style.transform='scale('+p.e+')';
+    tono(p.n==='EXHALA'?330:494,.35,'sine',.09);
+  }
+  cuentaEl.textContent=resto;
+  resto--;
+  if(resto<0){
+    idx=(idx+1)%3; resto=pasos[idx].s;
+    if(idx===0){ ciclos++; numCiclos.textContent=ciclos; }
+  }
+},1000);
+
+/* ===== ARENA ===== */
+const cv=document.getElementById('canvasArena'), cx2=cv.getContext('2d');
+let parts=[];
+function ajustarCanvas(){
+  const r=cv.getBoundingClientRect();
+  cv.width=r.width*devicePixelRatio; cv.height=r.height*devicePixelRatio;
+  cx2.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+window.addEventListener('resize',ajustarCanvas);
+setTimeout(ajustarCanvas,80);
+function emitir(x,y){
+  for(let i=0;i<5;i++){
+    parts.push({x:x+(Math.random()-.5)*14, y:y+(Math.random()-.5)*14,
+      vx:(Math.random()-.5)*.7, vy:Math.random()*.9+.25,
+      r:Math.random()*3+1.2, vida:1, h:Math.random()*80+280});
+  }
+  if(parts.length>2600) parts.splice(0,600);
+}
+let dibujando=false;
+function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+cv.addEventListener('pointerdown',e=>{dibujando=true;const p=pos(e);emitir(p.x,p.y);tono(700,.05,'sine',.05);});
+cv.addEventListener('pointermove',e=>{ if(!dibujando)return; e.preventDefault(); const p=pos(e); emitir(p.x,p.y); });
+['pointerup','pointerleave','pointercancel'].forEach(t=>cv.addEventListener(t,()=>dibujando=false));
+(function bucleArena(){
+  const w=cv.width/devicePixelRatio, h=cv.height/devicePixelRatio;
+  cx2.clearRect(0,0,w,h);
+  parts.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=.035; p.vida-=.007;
+    if(p.y>h-2){ p.y=h-2; p.vy*=-.24; p.vx*=.7; }
+    cx2.beginPath();
+    cx2.fillStyle=`hsla(${p.h},85%,72%,${Math.max(p.vida,0)})`;
+    cx2.shadowBlur=10; cx2.shadowColor=`hsla(${p.h},90%,70%,.7)`;
+    cx2.arc(p.x,p.y,p.r,0,6.3); cx2.fill();
+  });
+  cx2.shadowBlur=0;
+  parts=parts.filter(p=>p.vida>0);
+  requestAnimationFrame(bucleArena);
+})();
+
+/* ===== SPINNER ===== */
+const svgSpin=document.getElementById('spinner'), gSpin=document.getElementById('gSpin');
+let ang=0, vel=0, arrastrando=false, prevAng=0;
+function angDe(e){ const r=svgSpin.getBoundingClientRect(); const t=e.touches?e.touches[0]:e;
+  return Math.atan2(t.clientY-(r.top+r.height/2), t.clientX-(r.left+r.width/2))*180/Math.PI; }
+svgSpin.addEventListener('pointerdown',e=>{arrastrando=true;prevAng=angDe(e);vel=0;});
+svgSpin.addEventListener('pointermove',e=>{
+  if(!arrastrando)return; e.preventDefault();
+  const a=angDe(e); let d=a-prevAng;
+  if(d>180)d-=360; if(d<-180)d+=360;
+  ang+=d; vel=d; prevAng=a;
+});
+['pointerup','pointerleave','pointercancel'].forEach(t=>svgSpin.addEventListener(t,()=>{
+  if(arrastrando && Math.abs(vel)>4) tono(300+Math.abs(vel)*6,.2,'triangle',.08);
+  arrastrando=false;
+}));
+(function bucleSpin(){
+  if(!arrastrando){ ang+=vel; vel*=0.985; if(Math.abs(vel)<0.02) vel=0; }
+  gSpin.setAttribute('transform',`rotate(${ang} 100 100)`);
+  requestAnimationFrame(bucleSpin);
+})();
+
+/* ===== 5-4-3-2-1 ===== */
+const datosG=[
+  [5,'5 cosas que puedes VER','Mira alrededor y nómbralas en voz baja: una lámpara, tus manos, una ventana…'],
+  [4,'4 cosas que puedes TOCAR','La textura de tu ropa, la mesa, el respaldo de la silla, tu propio pulso.'],
+  [3,'3 cosas que puedes OÍR','Un ventilador, tráfico lejano, tu respiración.'],
+  [2,'2 cosas que puedes OLER','Café, jabón, el aire. Si no hueles nada, recuerda dos aromas que te gusten.'],
+  [1,'1 cosa que puedes SABOREAR','Un sorbo de agua, o simplemente el sabor de tu boca ahora mismo.']
+];
+const lista=document.getElementById('listaGround');
+datosG.forEach(([n,t,d])=>{
+  const div=document.createElement('div');
+  div.className='paso';
+  div.innerHTML=`<div class="num">${n}</div><p><b>${t}</b>${d}</p>`;
+  div.onclick=()=>{ div.classList.toggle('hecho'); tono(div.classList.contains('hecho')?660:440,.12,'sine',.1);
+    if([...lista.children].every(x=>x.classList.contains('hecho'))){
+      setTimeout(()=>{ tono(880,.4,'triangle',.12);
+        setTimeout(()=>[...lista.children].forEach(x=>x.classList.remove('hecho')),2600); },200);
+    }};
+  lista.appendChild(div);
+});
+</script>
+</body>
+</html>
