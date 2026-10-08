@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>La Cabra que Grita · Antiestrés</title>
+<style>
+  :root{
+    --azul:#8ec5ec; --azulOsc:#2f6fa3; --crema:#f6ead8; --tronco:#4a2f22;
+    --rojo:#ff4d5e; --amarillo:#ffd23f; --texto:#23324a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--texto);
+    background:#fbf8f3;overflow:hidden;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    display:flex;flex-direction:column;
+  }
+  #fondo,#confeti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;}
+  #fondo{z-index:0;} #confeti{z-index:5;}
+
+  header{position:relative;z-index:2;text-align:center;padding:14px 12px 0;}
+  h1{
+    margin:0;font-size:clamp(1.6rem,6vw,2.4rem);font-weight:900;letter-spacing:1px;
+    color:#fff;text-transform:uppercase;
+    -webkit-text-stroke:2px var(--azulOsc);paint-order:stroke fill;
+    text-shadow:0 4px 0 var(--azulOsc);
+  }
+  .sub{margin:4px 0 0;font-size:.85rem;color:#5a6b85;}
+
+  /* ---------- Escenario ---------- */
+  #escenario{
+    position:relative;z-index:2;flex:1;display:flex;align-items:center;justify-content:center;
+    min-height:0;
+  }
+  #boton{
+    position:relative;display:block;cursor:pointer;touch-action:none;
+    width:min(78vw,380px);
+  }
+  #boton input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;}
+  #goatSvg{width:100%;height:auto;display:block;overflow:visible;
+    filter:drop-shadow(0 18px 18px rgba(40,30,20,.25));}
+
+  /* piezas animables */
+  #cabra{transition:transform .09s ease;transform-box:view-box;transform-origin:160px 258px;}
+  #cabeza{transition:transform .14s cubic-bezier(.3,1.6,.5,1);transform-box:view-box;transform-origin:212px 158px;}
+  #mandibula{transition:transform .1s ease;transform-box:view-box;transform-origin:252px 124px;}
+  #ojo{transition:transform .1s;transform-box:fill-box;transform-origin:center;}
+  #boca{transition:opacity .08s;opacity:0;}
+  #botonTronco{transition:transform .08s;transform-box:view-box;transform-origin:160px 262px;}
+
+  .gritando #cabra{transform:translateY(5px) scaleY(.96);}
+  .gritando #cabeza{transform:rotate(-20deg);}
+  .gritando #mandibula{transform:rotate(30deg);}
+  .gritando #ojo{transform:scale(1.45);}
+  .gritando #boca{opacity:1;}
+  .gritando #botonTronco{transform:translateY(3px);}
+  .gritando #goatSvg{animation:temblor .07s infinite;}
+  @keyframes temblor{
+    0%{transform:translate(0,0) rotate(0)}25%{transform:translate(-2px,1px) rotate(-.6deg)}
+    50%{transform:translate(2px,-1px) rotate(.5deg)}75%{transform:translate(-1px,-1px) rotate(-.3deg)}
+  }
+  body.sacudida main, body.sacudida header{animation:temblor .08s 4;}
+
+  /* Globo de texto */
+  #globo{
+    position:absolute;left:58%;top:-2%;z-index:3;
+    background:#fff;color:var(--rojo);font-weight:900;font-style:italic;
+    border:3px solid var(--texto);border-radius:22px;padding:8px 16px;
+    font-size:1.5rem;white-space:nowrap;letter-spacing:1px;
+    transform:scale(0) rotate(-8deg);transform-origin:0% 100%;
+    transition:transform .16s cubic-bezier(.3,1.8,.5,1);pointer-events:none;
+    box-shadow:4px 4px 0 var(--texto);
+  }
+  #globo::after{
+    content:"";position:absolute;left:12px;bottom:-16px;border:9px solid transparent;
+    border-top:12px solid var(--texto);border-left:4px solid var(--texto);
+  }
+  .gritando #globo{transform:scale(var(--escala,1)) rotate(-8deg);}
+
+  .pista{
+    position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:.8rem;color:#6b7a92;
+    pointer-events:none;
+  }
+
+  /* ---------- Panel inferior ---------- */
+  main{position:relative;z-index:2;padding:0 14px 14px;max-width:560px;width:100%;margin:0 auto;}
+  .tarjeta{
+    background:rgba(255,255,255,.85);backdrop-filter:blur(8px);
+    border:2px solid var(--texto);border-radius:18px;padding:12px 14px;
+    box-shadow:4px 4px 0 var(--texto);
+  }
+  .stats{display:flex;justify-content:space-around;text-align:center;margin-bottom:10px;}
+  .stats b{display:block;font-size:1.35rem;color:var(--azulOsc);}
+  .stats span{font-size:.7rem;color:#6b7a92;text-transform:uppercase;letter-spacing:.5px;}
+  .estres{font-size:.75rem;color:#6b7a92;display:flex;justify-content:space-between;}
+  .barra{height:12px;border-radius:99px;background:#e6e9ef;overflow:hidden;margin:4px 0 10px;border:1.5px solid var(--texto);}
+  #barraEstres{height:100%;width:100%;background:linear-gradient(90deg,#7ee08a,var(--amarillo),var(--rojo));
+    transition:width .6s ease;}
+  .fila{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+  .chip{
+    border:2px solid var(--texto);background:#fff;border-radius:99px;padding:6px 11px;
+    font-size:.78rem;font-weight:600;cursor:pointer;color:var(--texto);
+  }
+  .chip.on{background:var(--azul);}
+  .fila + .fila{margin-top:8px;}
+
+  /* ---------- Guía de bolsillo ---------- */
+  #guia{
+    position:fixed;inset:0;z-index:10;background:rgba(20,30,50,.55);
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  #guia.abierta{display:flex;}
+  .libro{
+    width:min(86vw,320px);aspect-ratio:3/4;border-radius:6px 14px 14px 6px;
+    background:linear-gradient(160deg,#a9d6f5,#6fb1e0);border-left:10px solid #3d7fb3;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.6);padding:22px 20px;
+    display:flex;flex-direction:column;text-align:center;position:relative;
+    animation:abrir .35s cubic-bezier(.3,1.5,.5,1);
+  }
+  @keyframes abrir{from{transform:scale(.6) rotateY(40deg);opacity:0;}to{transform:none;opacity:1;}}
+  .libro.pagina{background:#fffdf7;border-left-color:#d9cdb8;}
+  .libro h2{margin:0;font-size:1.6rem;font-weight:900;color:#fff;-webkit-text-stroke:1.5px var(--azulOsc);
+    paint-order:stroke fill;text-shadow:0 3px 0 var(--azulOsc);text-transform:uppercase;line-height:1.05;}
+  .libro.pagina h2{color:var(--azulOsc);-webkit-text-stroke:0;text-shadow:none;font-size:1.05rem;}
+  .libro .cuerpo{flex:1;display:flex;flex-direction:column;justify-content:center;font-size:.95rem;line-height:1.5;}
+  .libro .emoji{font-size:3rem;margin-bottom:8px;}
+  .libro .num{font-size:.7rem;color:#9a8f7c;}
+  .navLibro{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+  .navLibro button{border:2px solid var(--texto);background:#fff;border-radius:10px;padding:5px 12px;font-weight:700;cursor:pointer;}
+  .cerrar{position:absolute;top:6px;right:10px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--texto);}
+</style>
+</head>
+<body>
+<canvas id="fondo"></canvas>
+<canvas id="confeti"></canvas>
+
+<header>
+  <h1>La Cabra que Grita</h1>
+  <p class="sub">Aprieta el tronco. Mantén para un grito más largo. Barra espaciadora también funciona.</p>
+</header>
+
+<section id="escenario">
+  <label id="boton" for="sw">
+    <input type="checkbox" id="sw" switch tabindex="-1">
+    <div id="globo">AHHHH!</div>
+    <svg id="goatSvg" viewBox="0 0 320 340" aria-label="Cabra sobre un tronco">
+      <!-- TRONCO / BOTÓN -->
+      <g id="botonTronco">
+        <path d="M50 262 L50 312 Q160 350 270 312 L270 262 Z" fill="#3a241a"/>
+        <path d="M50 262 L50 312 Q160 350 270 312 L270 262 Z" fill="url(#corteza)"/>
+        <ellipse cx="160" cy="262" rx="110" ry="28" fill="#8a5a3c"/>
+        <ellipse cx="160" cy="262" rx="92" ry="22" fill="none" stroke="#6e4530" stroke-width="3"/>
+        <ellipse cx="160" cy="262" rx="66" ry="16" fill="none" stroke="#6e4530" stroke-width="3"/>
+        <ellipse cx="160" cy="262" rx="38" ry="9" fill="none" stroke="#6e4530" stroke-width="3"/>
+        <ellipse cx="160" cy="262" rx="12" ry="3" fill="#6e4530"/>
+      </g>
+      <defs>
+        <linearGradient id="corteza" x1="0" x2="1">
+          <stop offset="0" stop-color="#000" stop-opacity=".35"/>
+          <stop offset=".35" stop-color="#fff" stop-opacity=".08"/>
+          <stop offset="1" stop-color="#000" stop-opacity=".45"/>
+        </linearGradient>
+        <radialGradient id="pelaje" cx=".4" cy=".35" r=".8">
+          <stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#e3d2b8"/>
+        </radialGradient>
+      </defs>
+
+      <!-- CABRA -->
+      <g id="cabra">
+        <!-- patas traseras -->
+        <rect x="96" y="200" width="14" height="60" rx="6" fill="#e0cdb0"/>
+        <rect x="96" y="250" width="14" height="10" rx="3" fill="#1d1d1d"/>
+        <rect x="190" y="200" width="14" height="60" rx="6" fill="#e0cdb0"/>
+        <rect x="190" y="250" width="14" height="10" rx="3" fill="#1d1d1d"/>
+        <!-- cola -->
+        <path d="M84 168 Q70 150 78 142 Q88 152 92 166 Z" fill="#efe2cc"/>
+        <!-- cuerpo -->
+        <ellipse cx="150" cy="185" rx="72" ry="40" fill="url(#pelaje)"/>
+        <!-- patas delanteras -->
+        <rect x="114" y="205" width="14" height="57" rx="6" fill="#f2e6d2"/>
+        <rect x="114" y="252" width="14" height="10" rx="3" fill="#111"/>
+        <rect x="204" y="205" width="14" height="57" rx="6" fill="#f2e6d2"/>
+        <rect x="204" y="252" width="14" height="10" rx="3" fill="#111"/>
+        <!-- cuello -->
+        <path d="M190 160 Q205 120 228 112 L240 128 Q222 150 215 190 Z" fill="url(#pelaje)"/>
+
+        <!-- CABEZA -->
+        <g id="cabeza">
+          <!-- cuernos -->
+          <path d="M232 96 Q214 70 192 74" stroke="#1b1b1b" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <path d="M240 94 Q226 66 204 66" stroke="#2b2b2b" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <!-- oreja -->
+          <ellipse cx="216" cy="110" rx="17" ry="7" fill="#f0c9b6" transform="rotate(-25 216 110)"/>
+          <!-- boca interior (se ve al abrir) -->
+          <path id="boca" d="M248 122 L288 120 L282 146 Z" fill="#7a1d2b"/>
+          <!-- mandíbula inferior -->
+          <g id="mandibula">
+            <path d="M246 122 Q270 124 288 124 Q290 132 280 134 Q262 136 246 132 Z" fill="#efe1cb"/>
+            <path d="M258 134 Q256 150 262 158 Q268 148 266 134 Z" fill="#d8c6a8"/>
+          </g>
+          <!-- cráneo -->
+          <ellipse cx="240" cy="110" rx="26" ry="19" fill="url(#pelaje)"/>
+          <!-- hocico -->
+          <path d="M248 100 Q280 104 292 116 Q292 124 284 125 L246 124 Z" fill="#f4e8d4"/>
+          <ellipse cx="287" cy="114" rx="3" ry="2" fill="#4a3a32"/>
+          <!-- ojo con pupila rectangular -->
+          <g id="ojo">
+            <circle cx="244" cy="104" r="6.5" fill="#f2c230" stroke="#3a2a1a" stroke-width="1.2"/>
+            <rect x="240" y="102.8" width="8" height="2.6" rx="1" fill="#111"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+  </label>
+  <div class="pista" id="pista">Toca para activar el sonido</div>
+</section>
+
+<main>
+  <div class="tarjeta">
+    <div class="stats">
+      <div><b id="nGritos">0</b><span>Gritos</span></div>
+      <div><b id="nSeg">0.0</b><span>Segundos</span></div>
+      <div><b id="nRecord">0.0</b><span>Grito más largo</span></div>
+    </div>
+    <div class="estres"><span>Nivel de estrés</span><span id="txtEstres">100%</span></div>
+    <div class="barra"><div id="barraEstres"></div></div>
+    <div class="fila" id="voces">
+      <button class="chip on" data-v="clasica">🐐 Clásica</button>
+      <button class="chip" data-v="bebe">🍼 Cabrito</button>
+      <button class="chip" data-v="abuela">👵 Abuela</button>
+      <button class="chip" data-v="coro">🎶 Coro</button>
+    </div>
+    <div class="fila">
+      <button class="chip" id="btnSorpresa">🎲 Modo sorpresa: no</button>
+      <button class="chip" id="btnGuia">📖 Guía de bolsillo</button>
+    </div>
+  </div>
+</main>
+
+<div id="guia">
+  <div class="libro" id="libro"></div>
+</div>
+
+<script>
+/* =========================================================
+   AUDIO: grito de cabra sintetizado (sin archivos)
+   Fuente diente de sierra + trémolo de balido + formantes "A" + ruido áspero
+   ========================================================= */
+let ctx=null, salida=null;
+function audio(){
+  if('audioSession' in navigator){ try{navigator.audioSession.type='playback';}catch(e){} }
+  if(!ctx){
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const comp=ctx.createDynamicsCompressor();
+    comp.threshold.value=-14; comp.ratio.value=6;
+    salida=ctx.createGain(); salida.gain.value=.9;
+    salida.connect(comp).connect(ctx.destination);
+  }
+  if(ctx.state==='suspended') ctx.resume();
+  return ctx;
+}
+function curvaDistorsion(k){
+  const n=1024,c=new Float32Array(n);
+  for(let i=0;i<n;i++){const x=i*2/n-1;c[i]=(1+k)*x/(1+k*Math.abs(x));}
+  return c;
+}
+let bufRuido=null;
+function ruido(){
+  if(bufRuido) return bufRuido;
+  bufRuido=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
+  const d=bufRuido.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  return bufRuido;
+}
+const VOCES={
+  clasica:[{f0:430,trem:21,dist:9,form:1}],
+  bebe:   [{f0:680,trem:26,dist:6,form:1.25}],
+  abuela: [{f0:250,trem:13,dist:22,form:.9}],
+  coro:   [{f0:300,trem:17,dist:10,form:.95},{f0:440,trem:22,dist:9,form:1},{f0:610,trem:25,dist:7,form:1.15}]
+};
+let vozActual='clasica';
+
+function crearVoz(p,t0,vol){
+  const var_=1+(Math.random()-.5)*.14;           // cada grito suena un poco distinto
+  const f0=p.f0*var_;
+  const g=ctx.createGain(); g.gain.value=0;
+
+  // fuente
+  const o1=ctx.createOscillator(); o1.type='sawtooth';
+  const o2=ctx.createOscillator(); o2.type='square';
+  o1.frequency.setValueAtTime(f0*.78,t0);
+  o1.frequency.exponentialRampToValueAtTime(f0*1.12,t0+.12);
+  o1.frequency.exponentialRampToValueAtTime(f0,t0+.45);
+  o2.frequency.setValueAtTime(f0*.78*1.006,t0);
+  o2.frequency.exponentialRampToValueAtTime(f0*1.12*1.006,t0+.12);
+  o2.frequency.exponentialRampToValueAtTime(f0*1.006,t0+.45);
+  const g2=ctx.createGain(); g2.gain.value=.35; o2.connect(g2);
+
+  // vibrato
+  const vib=ctx.createOscillator(); vib.frequency.value=5.5+Math.random()*2;
+  const vibG=ctx.createGain(); vibG.gain.value=f0*.035;
+  vib.connect(vibG); vibG.connect(o1.frequency); vibG.connect(o2.frequency);
+
+  // mezcla + distorsión
+  const mezcla=ctx.createGain();
+  o1.connect(mezcla); g2.connect(mezcla);
+  const ws=ctx.createWaveShaper(); ws.curve=curvaDistorsion(p.dist); ws.oversample='2x';
+  mezcla.connect(ws);
+
+  // trémolo de balido "eh-eh-eh"
+  const trem=ctx.createGain(); trem.gain.value=.62;
+  const lfo=ctx.createOscillator(); lfo.type='triangle'; lfo.frequency.value=p.trem*(0.9+Math.random()*.2);
+  const lfoG=ctx.createGain(); lfoG.gain.value=.38;
+  lfo.connect(lfoG).connect(trem.gain);
+  ws.connect(trem);
+
+  // formantes de vocal "A"
+  const formantes=[[780,5,1],[1250,7,.75],[2600,9,.4],[3500,10,.18]];
+  formantes.forEach(([f,q,a])=>{
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=f*p.form; bp.Q.value=q;
+    const ga=ctx.createGain(); ga.gain.value=a*1.6;
+    trem.connect(bp); bp.connect(ga); ga.connect(g);
+  });
+  // aspereza (ruido)
+  const nz=ctx.createBufferSource(); nz.buffer=ruido(); nz.loop=true;
+  const nbp=ctx.createBiquadFilter(); nbp.type='bandpass'; nbp.frequency.value=2800; nbp.Q.value=.8;
+  const ng=ctx.createGain(); ng.gain.value=.22;
+  nz.connect(nbp).connect(ng).connect(trem);
+
+  g.connect(salida);
+  g.gain.setValueAtTime(0,t0);
+  g.gain.linearRampToValueAtTime(vol,t0+.035);
+
+  [o1,o2,vib,lfo,nz].forEach(n=>n.start(t0));
+  return {
+    parar(t){
+      o1.frequency.cancelScheduledValues(t); o2.frequency.cancelScheduledValues(t);
+      o1.frequency.setValueAtTime(o1.frequency.value,t);
+      o1.frequency.exponentialRampToValueAtTime(f0*.62,t+.32);
+      o2.frequency.setValueAtTime(o2.frequency.value,t);
+      o2.frequency.exponentialRampToValueAtTime(f0*.62,t+.32);
+      g.gain.cancelScheduledValues(t);
+      g.gain.setValueAtTime(g.gain.value,t);
+      g.gain.linearRampToValueAtTime(0,t+.34);
+      [o1,o2,vib,lfo,nz].forEach(n=>n.stop(t+.4));
+    }
+  };
+}
+
+/* =========================================================
+   LÓGICA DEL JUGUETE
+   ========================================================= */
+const boton=document.getElementById('boton'), globo=document.getElementById('globo'),
+      pista=document.getElementById('pista');
+const MIN_GRITO=.9;          // como el juguete: un toque = grito completo
+let activo=null;              // grito en curso
+let gritos=0, segTotal=0, record=0, estres=100;
+
+function empezar(){
+  if(activo) return;
+  audio();
+  pista.textContent='';
+  const t0=ctx.currentTime;
+  const voces=VOCES[vozActual].map(p=>crearVoz(p,t0,VOCES[vozActual].length>1?.5:.85));
+  activo={voces,t0,inicio:performance.now(),soltado:false};
+  document.body.classList.add('gritando');
+  boton.classList.add('gritando');
+  // globo que crece mientras sostienes
+  let h=4; globo.textContent='AHHHH!';
+  activo.timer=setInterval(()=>{
+    if(h<16){h++; globo.textContent='A'+'H'.repeat(h)+'!';}
+    const dur=(performance.now()-activo.inicio)/1000;
+    globo.style.setProperty('--escala',Math.min(1+dur*.12,1.6));
+    if(dur>1.2 && Math.random()<.25) document.body.classList.add('sacudida');
+  },110);
+  // vibración Android (trémolo); iOS usa el switch nativo
+  if(navigator.vibrate) navigator.vibrate([40,25,40,25,40,25,40,25,40,25,40,25,40]);
+  explotarConfeti(24);
+}
+function terminar(){
+  if(!activo || activo.soltado) return;
+  activo.soltado=true;
+  const transcurrido=(performance.now()-activo.inicio)/1000;
+  const espera=Math.max(0,MIN_GRITO-transcurrido)*1000;
+  setTimeout(()=>{
+    const a=activo; if(!a) return;
+    const dur=(performance.now()-a.inicio)/1000;
+    a.voces.forEach(v=>v.parar(ctx.currentTime));
+    clearInterval(a.timer);
+    if(navigator.vibrate) navigator.vibrate(0);
+    activo=null;
+    setTimeout(()=>{
+      boton.classList.remove('gritando'); document.body.classList.remove('gritando','sacudida');
+      globo.style.setProperty('--escala',1);
+    },260);
+    registrar(dur);
+    explotarConfeti(Math.min(30+dur*30,160));
+  },espera);
+}
+function registrar(dur){
+  gritos++; segTotal+=dur; record=Math.max(record,dur);
+  document.getElementById('nGritos').textContent=gritos;
+  document.getElementById('nSeg').textContent=segTotal.toFixed(1);
+  document.getElementById('nRecord').textContent=record.toFixed(1);
+  estres=Math.max(0,estres-(4+dur*7));
+  actualizarEstres();
+  if(estres===0){
+    pista.textContent='🐐 Estrés liberado. La cabra está orgullosa de ti.';
+    setTimeout(()=>{estres=100;actualizarEstres();pista.textContent='';},5000);
+  }
+}
+function actualizarEstres(){
+  document.getElementById('barraEstres').style.width=estres+'%';
+  document.getElementById('txtEstres').textContent=Math.round(estres)+'%';
+}
+
+// puntero (mouse/touch/pen)
+boton.addEventListener('pointerdown',e=>{ e.preventDefault(); empezar(); });
+window.addEventListener('pointerup',terminar);
+window.addEventListener('pointercancel',terminar);
+boton.addEventListener('contextmenu',e=>e.preventDefault());
+// teclado
+window.addEventListener('keydown',e=>{ if(e.code==='Space'&&!e.repeat){e.preventDefault();empezar();} });
+window.addEventListener('keyup',e=>{ if(e.code==='Space'){e.preventDefault();terminar();} });
+// el <label> alterna el switch oculto → háptico nativo en iOS 17.4+
+
+/* Voces */
+document.querySelectorAll('#voces .chip').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#voces .chip').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); vozActual=b.dataset.v;
+});
+
+/* Modo sorpresa: la cabra interrumpe sola de vez en cuando (como el meme) */
+let sorpresa=false, tSorpresa=null;
+document.getElementById('btnSorpresa').onclick=function(){
+  sorpresa=!sorpresa; audio();
+  this.textContent='🎲 Modo sorpresa: '+(sorpresa?'sí':'no');
+  this.classList.toggle('on',sorpresa);
+  clearTimeout(tSorpresa); if(sorpresa) programarSorpresa();
+};
+function programarSorpresa(){
+  tSorpresa=setTimeout(()=>{
+    if(!sorpresa) return;
+    if(!activo){ empezar(); setTimeout(terminar,400+Math.random()*900); }
+    programarSorpresa();
+  },15000+Math.random()*40000);
+}
+
+/* =========================================================
+   FONDO DE CHISPITAS + CONFETI
+   ========================================================= */
+const colores=['#ff5c7a','#ffd23f','#4cc9f0','#7ee08a','#b388ff','#ff9f43','#5aa9ff'];
+const fondo=document.getElementById('fondo'), fx=fondo.getContext('2d');
+function pintarFondo(){
+  const dpr=devicePixelRatio||1;
+  fondo.width=innerWidth*dpr; fondo.height=innerHeight*dpr; fx.scale(dpr,dpr);
+  const n=Math.floor(innerWidth*innerHeight/2600);
+  for(let i=0;i<n;i++){
+    fx.save(); fx.translate(Math.random()*innerWidth,Math.random()*innerHeight);
+    fx.rotate(Math.random()*Math.PI); fx.globalAlpha=.55;
+    fx.fillStyle=colores[i%colores.length];
+    fx.beginPath(); fx.roundRect?fx.roundRect(-8,-2,16,4,2):fx.rect(-8,-2,16,4); fx.fill(); fx.restore();
+  }
+}
+pintarFondo(); addEventListener('resize',pintarFondo);
+
+const conf=document.getElementById('confeti'), cx=conf.getContext('2d');
+let piezas=[];
+function ajustarConf(){const d=devicePixelRatio||1;conf.width=innerWidth*d;conf.height=innerHeight*d;cx.setTransform(d,0,0,d,0,0);}
+ajustarConf(); addEventListener('resize',ajustarConf);
+function explotarConfeti(n){
+  const r=boton.getBoundingClientRect();
+  const ox=r.left+r.width*.82, oy=r.top+r.height*.32;   // sale de la boca
+  for(let i=0;i<n;i++){
+    const a=-Math.PI/2+(Math.random()-.3)*1.9, v=4+Math.random()*9;
+    piezas.push({x:ox,y:oy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,rot:Math.random()*6,vr:(Math.random()-.5)*.4,
+      c:colores[Math.floor(Math.random()*colores.length)],vida:1});
+  }
+}
+(function animar(){
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  piezas.forEach(p=>{
+    p.vy+=.28; p.vx*=.99; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.vida-=.008;
+    cx.save(); cx.translate(p.x,p.y); cx.rotate(p.rot); cx.globalAlpha=Math.max(p.vida,0);
+    cx.fillStyle=p.c; cx.fillRect(-7,-2,14,4); cx.restore();
+  });
+  piezas=piezas.filter(p=>p.vida>0 && p.y<innerHeight+20);
+  requestAnimationFrame(animar);
+})();
+
+/* =========================================================
+   GUÍA DE BOLSILLO
+   ========================================================= */
+const paginas=[
+  null, // portada
+  ['👁️','Ojos de cabra','Las cabras tienen pupilas rectangulares horizontales. Les dan una visión panorámica para detectar depredadores sin girar la cabeza.'],
+  ['🏺','Viejas amigas','Fueron de los primeros animales domesticados por los humanos, hace unos 10,000 años.'],
+  ['📣','¿Por qué gritan?','Su “grito” es un balido para llamar o alertar al grupo. Cada cabra tiene una voz propia y las mamás reconocen a sus crías por el sonido.'],
+  ['🗣️','Con acento','Hay estudios que sugieren que los cabritos ajustan su balido según el grupo en el que crecen, como una especie de “acento”.'],
+  ['🌿','Cuatro estómagos','Son rumiantes: su estómago tiene cuatro compartimentos y vuelven a masticar lo que ya comieron.'],
+  ['🧗','Escaladoras','Sus pezuñas tienen una base blanda que se agarra a la roca. Por eso trepan acantilados que parecen imposibles.'],
+  ['😮‍💨','Consejo de la cabra','Después de un buen grito, respira lento tres veces. Suelta los hombros. Ya pasó lo peor.']
+];
+let pag=0;
+const libro=document.getElementById('libro'), guia=document.getElementById('guia');
+function render(){
+  if(pag===0){
+    libro.className='libro';
+    libro.innerHTML=`<button class="cerrar" onclick="cerrarGuia()">✕</button>
+      <h2>Cabras<br>que gritan</h2>
+      <div class="cuerpo"><div class="emoji">🐐💬</div>
+      <div style="font-weight:800;color:#fff;letter-spacing:2px">GUÍA DE BOLSILLO</div></div>
+      <div class="navLibro"><span></span><button onclick="mover(1)">Abrir ›</button></div>`;
+  }else{
+    const [e,t,d]=paginas[pag];
+    libro.className='libro pagina';
+    libro.innerHTML=`<button class="cerrar" onclick="cerrarGuia()">✕</button>
+      <h2>${t}</h2><div class="cuerpo"><div class="emoji">${e}</div>${d}</div>
+      <div class="navLibro"><button onclick="mover(-1)">‹</button>
+      <span class="num">${pag} / ${paginas.length-1}</span>
+      <button onclick="mover(1)" ${pag===paginas.length-1?'disabled':''}>›</button></div>`;
+  }
+}
+function mover(d){ pag=Math.max(0,Math.min(paginas.length-1,pag+d)); render();
+  if(ctx){ const o=ctx.createOscillator(),g=ctx.createGain(); o.frequency.value=900; g.gain.value=.04;
+    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.06); o.connect(g).connect(salida); o.start(); o.stop(ctx.currentTime+.07);} }
+function cerrarGuia(){ guia.classList.remove('abierta'); }
+document.getElementById('btnGuia').onclick=()=>{ pag=0; render(); guia.classList.add('abierta'); };
+guia.addEventListener('click',e=>{ if(e.target===guia) cerrarGuia(); });
+</script>
+</body>
+</html>
